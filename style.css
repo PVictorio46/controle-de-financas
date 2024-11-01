@@ -12,7 +12,7 @@
         display: flex;
         font-family: Georgia, 'Times New Roman', Times, serif;
         color: rgb(199, 199, 202);
-        font-size: 90px;
+        font-size: 70px;
         margin-top: 10px;
   }
   
@@ -125,4 +125,11 @@
   .columnType {
     width: 80px;
     text-align: center;
+  }
+
+  @media (max-width: 800px){
+    .resume{
+      display: flex;
+      flex-direction: column;
+    }
   }
