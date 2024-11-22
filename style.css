@@ -127,12 +127,12 @@
     text-align: center;
   }
 
-  @media (max-width: 768px){
+  @media (max-width: 420px){
     .resume{
       display: flex;
       flex-direction: column;
     }
     h1 {
-      font-size: 40px;
+      font-size: 30px;
     }
   }
