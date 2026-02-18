@@ -1,95 +1,120 @@
 const tbody = document.querySelector("tbody");
-const descItem = document.querySelector("#desc");
+const desc = document.querySelector("#desc");
 const amount = document.querySelector("#amount");
 const type = document.querySelector("#type");
-const btnNew = document.querySelector("#btnNew");
 
-const incomes = document.querySelector(".incomes");
-const expenses = document.querySelector(".expenses");
-const total = document.querySelector(".total");
+const incomes = document.querySelector("#incomes");
+const expenses = document.querySelector("#expenses");
+const total = document.querySelector("#total");
 
-let items;
+const monthSelect = document.querySelector("#monthSelect");
+const reportTitle = document.querySelector("#reportTitle");
 
-btnNew.onclick = () => {
-  if (descItem.value === "" || amount.value === "" || type.value === "") {
-    return alert("Preencha todos os campos!");
-  }
+const months = [
+"Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+"Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"
+];
 
-  items.push({
-    desc: descItem.value,
-    amount: Math.abs(amount.value).toFixed(2),
-    type: type.value,
-  });
+months.forEach(m => monthSelect.innerHTML += `<option>${m}</option>`);
 
-  setItensBD();
+const currentMonthIndex = new Date().getMonth();
+monthSelect.selectedIndex = currentMonthIndex;
 
-  loadItens();
+let currentMonth = monthSelect.value;
+let items = [];
 
-  descItem.value = "";
-  amount.value = "";
+monthSelect.addEventListener("change", () => {
+currentMonth = monthSelect.value;
+loadItens();
+});
+
+amount.addEventListener("input", () => {
+let value = amount.value.replace(/\D/g,"");
+value = (value/100).toLocaleString("pt-BR",{minimumFractionDigits:2});
+amount.value = value;
+});
+
+document.querySelector("#btnNew").onclick = () => {
+
+if(desc.value === "" || amount.value === "") return alert("Preencha os campos");
+
+const numericValue = Number(amount.value.replace(/\./g,"").replace(",","."));
+
+items.push({
+desc: desc.value,
+amount: numericValue,
+type: type.value
+});
+
+setItensBD();
+loadItens();
+
+desc.value = "";
+amount.value = "";
 };
 
-function deleteItem(index) {
-  items.splice(index, 1);
-  setItensBD();
-  loadItens();
+function loadItens(){
+items = getItensBD();
+tbody.innerHTML = "";
+
+items.forEach((item,index)=>insertItem(item,index));
+
+getTotals();
+
+reportTitle.innerText = `Relatório Financeiro - ${currentMonth}`;
 }
 
-function insertItem(item, index) {
-  let tr = document.createElement("tr");
+function insertItem(item,index){
+let tr = document.createElement("tr");
 
-  tr.innerHTML = `
-    <td>${item.desc}</td>
-    <td>R$ ${item.amount}</td>
-    <td class="columnType">${
-      item.type === "Entrada"
-        ? '<i class="bx bxs-chevron-up-circle"></i>'
-        : '<i class="bx bxs-chevron-down-circle"></i>'
-    }</td>
-    <td class="columnAction">
-      <button onclick="deleteItem(${index})"><i class='bx bx-trash'></i></button>
-    </td>
-  `;
+tr.innerHTML = `
+<td>${item.desc}</td>
+<td>${formatCurrency(item.amount)}</td>
+<td>${item.type === "Entrada"
+? '<i class="bx bxs-chevron-up-circle" style="color:#00e676"></i>'
+: '<i class="bx bxs-chevron-down-circle" style="color:#ff5252"></i>'}
+</td>
+<td><i class='bx bx-trash' onclick="deleteItem(${index})"></i></td>
+`;
 
-  tbody.appendChild(tr);
+tbody.appendChild(tr);
 }
 
-function loadItens() {
-  items = getItensBD();
-  tbody.innerHTML = "";
-  items.forEach((item, index) => {
-    insertItem(item, index);
-  });
-
-  getTotals();
+function deleteItem(index){
+items.splice(index,1);
+setItensBD();
+loadItens();
 }
 
-function getTotals() {
-  const amountIncomes = items
-    .filter((item) => item.type === "Entrada")
-    .map((transaction) => Number(transaction.amount));
+function getTotals(){
 
-  const amountExpenses = items
-    .filter((item) => item.type === "Saída")
-    .map((transaction) => Number(transaction.amount));
+const totalIncomes = items
+.filter(i => i.type === "Entrada")
+.reduce((acc,i)=>acc+i.amount,0);
 
-  const totalIncomes = amountIncomes
-    .reduce((acc, cur) => acc + cur, 0)
-    .toFixed(2);
+const totalExpenses = items
+.filter(i => i.type === "Saída")
+.reduce((acc,i)=>acc+i.amount,0);
 
-  const totalExpenses = Math.abs(
-    amountExpenses.reduce((acc, cur) => acc + cur, 0)
-  ).toFixed(2);
-
-  const totalItems = (totalIncomes - totalExpenses).toFixed(2);
-
-  incomes.innerHTML = totalIncomes;
-  expenses.innerHTML = totalExpenses;
-  total.innerHTML = totalItems;
+incomes.textContent = formatCurrency(totalIncomes);
+expenses.textContent = formatCurrency(totalExpenses);
+total.textContent = formatCurrency(totalIncomes - totalExpenses);
 }
 
-const getItensBD = () => JSON.parse(localStorage.getItem("db_items")) ?? [];
-const setItensBD = () =>
-  localStorage.setItem("db_items", JSON.stringify(items));
+function formatCurrency(value){
+return value.toLocaleString("pt-BR",{style:"currency",currency:"BRL"});
+}
+
+function getItensBD(){
+return JSON.parse(localStorage.getItem("financas_"+currentMonth)) ?? [];
+}
+
+function setItensBD(){
+localStorage.setItem("financas_"+currentMonth, JSON.stringify(items));
+}
+
+function printReport(){
+window.print();
+}
 
 loadItens();
