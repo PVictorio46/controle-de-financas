@@ -1,55 +1,69 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Controle Financeiro</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle Financeiro</title>
 
-<link href='https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css' rel='stylesheet'>
-<link rel="stylesheet" href="style.css">
+  <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+  <main class="container">
 
-<main class="container">
+    <h1 id="reportTitle">Controle Financeiro</h1>
 
-<h1 id="reportTitle">Controle Financeiro</h1>
+    <div class="topBar">
+      <select id="monthSelect"></select>
 
-<div class="topBar">
-<select id="monthSelect"></select>
-<button onclick="printReport()">🖨 Imprimir</button>
-</div>
+      <button onclick="printReport()">🖨 Imprimir</button>
+    </div>
 
-<section class="resume">
-<div><span>Entradas</span><h2 id="incomes">R$ 0,00</h2></div>
-<div><span>Saídas</span><h2 id="expenses">R$ 0,00</h2></div>
-<div><span>Total</span><h2 id="total">R$ 0,00</h2></div>
-</section>
+    <section class="resume">
+      <div>
+        <span>Entradas</span>
+        <h2 id="incomes">R$ 0,00</h2>
+      </div>
 
-<section class="form">
-<input type="text" id="desc" placeholder="Descrição">
-<input type="text" id="amount" placeholder="R$ 0,00">
-<select id="type">
-<option>Entrada</option>
-<option>Saída</option>
-</select>
-<button id="btnNew">Adicionar</button>
-</section>
+      <div>
+        <span>Saídas</span>
+        <h2 id="expenses">R$ 0,00</h2>
+      </div>
 
-<table>
-<thead>
-<tr>
-<th>Descrição</th>
-<th>Valor</th>
-<th>Tipo</th>
-<th></th>
-</tr>
-</thead>
-<tbody></tbody>
-</table>
+      <div>
+        <span>Total</span>
+        <h2 id="total">R$ 0,00</h2>
+      </div>
+    </section>
 
-</main>
+    <section class="form">
+      <input type="text" id="desc" placeholder="Descrição">
+      <input type="text" id="amount" placeholder="R$ 0,00">
 
-<script src="script.js"></script>
+      <select id="type">
+        <option>Entrada</option>
+        <option>Saída</option>
+      </select>
+
+      <button id="btnNew">Adicionar</button>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Descrição</th>
+          <th>Valor</th>
+          <th>Tipo</th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody></tbody>
+    </table>
+
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
