@@ -13,7 +13,7 @@ const defaultMonths = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Ju
 let currentMonth = "";
 let items = [];
 
-// Elementos do Modal
+// Elementos do Modal Customizado
 const modalOverlay = document.getElementById('customModal');
 const modalTitle = document.getElementById('modalTitle');
 const modalText = document.getElementById('modalText');
@@ -21,7 +21,7 @@ const modalInput = document.getElementById('modalInput');
 const btnCancel = document.getElementById('modalBtnCancel');
 const btnConfirm = document.getElementById('modalBtnConfirm');
 
-// === FUNÇÃO GLOBAL DO MODAL ===
+// === FUNÇÃO GLOBAL DO MODAL (Substitui Prompt/Alert/Confirm) ===
 window.customModal = function(title, text = "", type = "prompt") {
   return new Promise((resolve) => {
     modalTitle.innerText = title;
@@ -37,22 +37,28 @@ window.customModal = function(title, text = "", type = "prompt") {
       btnCancel.classList.remove("hidden");
     } else if (type === "alert") {
       modalInput.classList.add("hidden");
-      btnCancel.classList.add("hidden"); // Oculta botão cancelar em alertas simples
+      btnCancel.classList.add("hidden");
     }
 
     modalOverlay.classList.remove("hidden");
 
     const handleConfirm = () => { cleanup(); resolve(type === "prompt" ? modalInput.value : true); };
     const handleCancel = () => { cleanup(); resolve(type === "prompt" ? null : false); };
+    const handleKeyPress = (e) => {
+      if (e.key === 'Enter') handleConfirm();
+      if (e.key === 'Escape') handleCancel();
+    };
 
     const cleanup = () => {
       modalOverlay.classList.add("hidden");
       btnConfirm.removeEventListener("click", handleConfirm);
       btnCancel.removeEventListener("click", handleCancel);
+      modalInput.removeEventListener("keydown", handleKeyPress);
     };
 
     btnConfirm.addEventListener("click", handleConfirm);
     btnCancel.addEventListener("click", handleCancel);
+    modalInput.addEventListener("keydown", handleKeyPress);
   });
 };
 
@@ -61,7 +67,9 @@ function setCustomMonths(list) { localStorage.setItem("customMonths", JSON.strin
 
 function loadMonthSelect() {
   const customMonths = getCustomMonths();
+  const previousMonth = currentMonth; // Salva o mês atual para não perder a seleção
   monthSelect.innerHTML = "";
+  
   defaultMonths.forEach(m => { monthSelect.innerHTML += `<option value="${m}">${m}</option>`; });
   
   if (customMonths.length > 0) { monthSelect.innerHTML += `<option disabled>──────────</option>`; }
@@ -71,8 +79,13 @@ function loadMonthSelect() {
   monthSelect.innerHTML += `<option value="__create__">➕ Criar Outro</option>`;
   monthSelect.innerHTML += `<option value="__delete__">❌ Excluir atual</option>`;
 
-  const currentMonthIndex = new Date().getMonth();
-  monthSelect.selectedIndex = currentMonthIndex;
+  const allMonths = [...defaultMonths, ...customMonths];
+  if (previousMonth && allMonths.includes(previousMonth)) {
+    monthSelect.value = previousMonth;
+  } else {
+    monthSelect.selectedIndex = new Date().getMonth();
+  }
+  
   currentMonth = monthSelect.value;
 }
 
@@ -90,9 +103,9 @@ monthSelect.addEventListener("change", async () => {
     
     customMonths.push(name);
     setCustomMonths(customMonths);
+    currentMonth = name;
     loadMonthSelect();
     monthSelect.value = name;
-    currentMonth = name;
     loadItens();
     return;
   }
@@ -110,6 +123,8 @@ monthSelect.addEventListener("change", async () => {
     customMonths = customMonths.filter(m => m !== currentMonth);
     setCustomMonths(customMonths);
     localStorage.removeItem(`financas_${currentMonth}`);
+    
+    currentMonth = defaultMonths[new Date().getMonth()];
     loadMonthSelect();
     loadItens();
     return;
@@ -133,6 +148,22 @@ amount.addEventListener("input", () => {
   amount.value = value;
 });
 
+// Parser inteligente e seguro para valores digitados em inputs de texto livres
+function parseInputValue(str) {
+  if (!str) return 0;
+  str = str.trim().replace(/[R$\s]/g, "");
+  
+  if (str.includes(",")) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  } else {
+    const parts = str.split(".");
+    if (parts.length === 2 && parts[1].length === 3) {
+      str = str.replace(/\./g, "");
+    }
+  }
+  return Number(str) || 0;
+}
+
 document.querySelector("#btnNew").onclick = async () => {
   if (desc.value === "" || (!hasSubItems.checked && amount.value === "")) {
     await customModal("Aviso", "Preencha os campos (Nome e/ou Valor)", "alert");
@@ -141,7 +172,7 @@ document.querySelector("#btnNew").onclick = async () => {
 
   let numericValue = 0;
   if (!hasSubItems.checked) {
-    numericValue = Number(amount.value.replace(/\./g, "").replace(",", "."));
+    numericValue = parseInputValue(amount.value);
   }
 
   items.push({
@@ -168,9 +199,12 @@ function loadItens() {
   items = getItensBD();
   tbody.innerHTML = "";
   items.forEach((item, index) => {
-    if (item.hasSubItems) { item.amount = (item.subItems || []).reduce((acc, sub) => acc + sub.amount, 0); }
+    if (item.hasSubItems) { 
+      item.amount = (item.subItems || []).reduce((acc, sub) => acc + sub.amount, 0); 
+    }
     insertItem(item, index);
   });
+  setItensBD(); // Sincroniza os totais recalculados no localStorage
   getTotals();
   reportTitle.innerText = `Relatório - ${currentMonth}`;
 }
@@ -225,10 +259,9 @@ window.addSubItem = async (index) => {
   let subAmountStr = await customModal("Valor", `Qual o valor de "${subDesc}"? (ex: 150,50)`, "prompt");
   if (!subAmountStr) return;
   
-  if (subAmountStr.includes(',')) { subAmountStr = subAmountStr.replace(/\./g, '').replace(',', '.'); }
-  let parsedAmount = Number(subAmountStr);
+  let parsedAmount = parseInputValue(subAmountStr);
   
-  if (isNaN(parsedAmount)) {
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
     await customModal("Erro", "O valor digitado é inválido!", "alert");
     return;
   }
@@ -236,14 +269,16 @@ window.addSubItem = async (index) => {
   if (!items[index].subItems) items[index].subItems = [];
   items[index].subItems.push({ desc: subDesc, amount: parsedAmount });
   items[index].isExpanded = true; 
-  setItensBD(); loadItens();
+  setItensBD(); 
+  loadItens();
 };
 
 window.deleteSubItem = async (itemIndex, subIndex) => {
   const confirmDel = await customModal("Excluir", "Deseja mesmo excluir este sub-item?", "confirm");
   if (confirmDel) {
     items[itemIndex].subItems.splice(subIndex, 1);
-    setItensBD(); loadItens();
+    setItensBD(); 
+    loadItens();
   }
 };
 
@@ -251,7 +286,8 @@ window.deleteItem = async (index) => {
   const confirmDel = await customModal("Excluir", "Excluir este item? (Sub-itens também serão apagados)", "confirm");
   if(confirmDel) {
     items.splice(index, 1);
-    setItensBD(); loadItens();
+    setItensBD(); 
+    loadItens();
   }
 };
 
@@ -290,10 +326,13 @@ window.copyFromMonth = async () => {
   const confirmCopy = await customModal("Confirmar", `Encontrados ${sourceData.length} itens em ${sourceMonth}.\nDeseja adicionar eles em ${currentMonth}?`, "confirm");
   if (confirmCopy) {
       items = [...items, ...sourceData];
-      setItensBD(); loadItens();
+      setItensBD(); 
+      loadItens();
       await customModal("Sucesso", `Dados de ${sourceMonth} copiados!`, "alert");
   }
 };
 
 function printReport() { window.print(); }
-loadMonthSelect(); loadItens();
+
+loadMonthSelect(); 
+loadItens();
