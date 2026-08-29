@@ -4,51 +4,49 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle Financeiro</title>
-
   <link href="https://unpkg.com/boxicons@2.1.2/css/boxicons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
   <main class="container">
-
     <h1 id="reportTitle">Controle Financeiro</h1>
-
     <div class="topBar">
       <select id="monthSelect"></select>
-
-      <button onclick="printReport()">🖨 Imprimir</button>
+      <div class="actions-top">
+        <button onclick="copyFromMonth()">📋 Copiar Relatório</button>
+        <button onclick="printReport()">🖨 Imprimir</button>
+      </div>
     </div>
-
+    
     <section class="resume">
       <div>
         <span>Entradas</span>
         <h2 id="incomes">R$ 0,00</h2>
       </div>
-
       <div>
         <span>Saídas</span>
         <h2 id="expenses">R$ 0,00</h2>
       </div>
-
       <div>
         <span>Total</span>
         <h2 id="total">R$ 0,00</h2>
       </div>
     </section>
-
+    
     <section class="form">
       <input type="text" id="desc" placeholder="Descrição">
       <input type="text" id="amount" placeholder="R$ 0,00">
-
       <select id="type">
         <option>Entrada</option>
         <option>Saída</option>
       </select>
-
+      <label class="checkbox-container">
+        <input type="checkbox" id="hasSubItems">
+        Sub-lista
+      </label>
       <button id="btnNew">Adicionar</button>
     </section>
-
+    
     <table>
       <thead>
         <tr>
@@ -58,12 +56,23 @@
           <th></th>
         </tr>
       </thead>
-
       <tbody></tbody>
     </table>
 
-  </main>
+    <!-- Modal Customizado (Substitui os alertas do navegador) -->
+    <div id="customModal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <h3 id="modalTitle">Título</h3>
+        <p id="modalText">Texto</p>
+        <input type="text" id="modalInput" class="hidden" placeholder="Digite aqui...">
+        <div class="modal-buttons">
+          <button id="modalBtnCancel" class="btn-cancel">Cancelar</button>
+          <button id="modalBtnConfirm" class="btn-confirm">OK</button>
+        </div>
+      </div>
+    </div>
 
+  </main>
   <script src="script.js"></script>
 </body>
 </html>
